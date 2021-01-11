@@ -17,6 +17,7 @@ def factorial(n: int):
         return n * factorial(n=n - 1)
 
 
+# TODO: write a "cleaner" function
 def solve(n: int) -> str:
     digits = [
         str(digit)
