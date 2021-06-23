@@ -13,6 +13,7 @@ from typing import (
     Optional,
 )
 
+
 class ListNode:
     # Definition for singly-linked list.
     def __init__(self, val=0, next=None):
@@ -62,14 +63,14 @@ class Solution:
                 # else:
                 (
                     initial_node.next,
-                    initial_node.next.next,
+                    initial_node.next.natural_numbers,
                     kth_next_node_.next,
-                    kth_next_node_.next.next,
+                    kth_next_node_.next.natural_numbers,
                 ) = (
                     kth_next_node_.next,
-                    kth_next_node_.next.next,
+                    kth_next_node_.next.natural_numbers,
                     initial_node.next,
-                    initial_node.next.next,
+                    initial_node.next.natural_numbers,
                 )
                 Solution.reverse_k_nodes(
                     initial_node=initial_node.next,
