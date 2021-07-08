@@ -22,31 +22,41 @@ class Solution:
         current_coordinate: Coordinate,
     ) -> bool:
 
+        current_word += board[current_coordinate.y][current_coordinate.x]
         if not word.startswith(current_word):
             return False
         elif word == current_word:
             return True
 
-        for x in range(
-            max(current_coordinate.x - 1, 0),
-            min(current_coordinate.x + 2, width),
-        ):
-            for y in range(
-                max(current_coordinate.y - 1, 0),
-                min(current_coordinate.y + 2, height),
-            ):
-                marks[y][x] = True
-                self.attempt(
-                    board=board,
-                    marks=marks,
-                    width=width,
-                    height=height,
-                    word=word,
-                    current_word=current_word + board[current_coordinate.y][current_coordinate.x],
-                    current_coordinate=Coordinate(x=x, y=y),
-                )
-                marks[y][x] = False
+        marks[current_coordinate.y][current_coordinate.x] = True
+
+        possible = [
+            self.attempt(
+                board=board,
+                marks=marks,
+                width=width,
+                height=height,
+                word=word,
+                current_word=current_word,
+                current_coordinate=coordinate,
+            )
+            for coordinate in [
+                Coordinate(x=current_coordinate.x - 1, y=current_coordinate.y),
+                Coordinate(x=current_coordinate.x + 1, y=current_coordinate.y),
+                Coordinate(x=current_coordinate.x, y=current_coordinate.y - 1),
+                Coordinate(x=current_coordinate.x, y=current_coordinate.y + 1),
+            ]
+            if (
+                (0 <= coordinate.x < width) and
+                (0 <= coordinate.y < height) and
+                not marks[coordinate.y][coordinate.x]
+            )
+        ]
+
         # if x != current_coordinate.x and y != current_coordinate.y
+        marks[current_coordinate.y][current_coordinate.x] = False
+
+        return any(possible)
 
 
     def exist(
