@@ -1,49 +1,99 @@
 from typing import (
-    NamedTuple,
     List,
+    NamedTuple,
+    Union,
+)
+from itertools import (
+    accumulate,
+)
+from bisect import (
+    bisect_left,
+    bisect_right,
+    insort,
+    insort_left,
 )
 
 
-class Number(NamedTuple):
-    value: int
-    index: int
+class Node(NamedTuple):
+    value: Union[int, float]
+    children: List['Node']
 
 
 class Solution:
-    def lengthOfLIS(self, nums: List[int]) -> int:
 
-        indexed_numbers = dict()
-        for index, number in enumerate(nums):
-            if number not in indexed_numbers:
-                indexed_numbers[number] = index
-        indexed_numbers = sorted(indexed_numbers)
+    def add_child(
+        self,
+        node: Node,
+        value: int,
+    ):
+        if node.value < value:
+            marked = False
+            for child in node.children:
+                if child.value < value:
+                    self.add_child(
+                        node=child,
+                        value=value,
+                    )
+                    marked = True
+            if not marked:
+                node.children.append(
+                    Node(
+                        value=value,
+                        children=[],
+                    )
+                )
 
-        LIS = [
-            1
-            for _ in range(len(indexed_numbers))
-        ]
-        indices = [
-            value
-            for key, value in indexed_numbers.items()
-        ]
-        for index in range(1, len(indexed_numbers)):
-            if indices[index] > indices[index - 1]:
-                LIS[index] = LIS[index - 1] + 1
-            else:
-                LIS[index] = LIS[index - 1]
+    def find_maximal_depth(
+        self,
+        node: Node,
+    ) -> int:
+        if len(node.children) == 0:
+            return 1
+        else:
+            return 1 + max(
+                self.find_maximal_depth(node=child)
+                for child in node.children
+            )
 
-        return max(LIS)
+    def lengthOfLIS(
+        self,
+        nums: List[int],
+    ) -> int:
+
+        root = Node(
+            value=float("-inf"),
+            children=[],
+        )
+
+        for number in nums:
+            self.add_child(
+                node=root,
+                value=number,
+            )
+
+        return self.find_maximal_depth(node=root) - 1
 
 
 if __name__ == '__main__':
     solution = Solution()
     print(
-        solution.lengthOfLIS(nums=[10, 9, 2, 5, 3, 7, 101, 18])
+        solution.lengthOfLIS(
+            nums=[10, 9, 2, 5, 3, 7, 101, 18],
+        )
     )
     print(
-        solution.lengthOfLIS(nums=[0, 1, 0, 3, 2, 3])
+        solution.lengthOfLIS(
+            nums=[0, 1, 0, 3, 2, 3],
+        )
     )
     print(
-        solution.lengthOfLIS(nums=[7, 7, 7, 7, 7, 7, 7])
+        solution.lengthOfLIS(
+            nums=[7, 7, 7, 7, 7, 7, 7],
+        )
+    )
+    print(
+        solution.lengthOfLIS(
+            nums=[7, 5, 6, 2, 1, 2, 3, 4, 5, 6, 7, 8],
+        )
     )
 
