@@ -15,10 +15,17 @@ class Force(NamedTuple):
     direction: Literal["L", ".", "R"]
     moment: int
 
-
-class Domino(NamedTuple):
+class Domino:
     direction: Literal["L", ".", "R"]
     last_force_moment: int
+
+    def __init__(
+        self,
+        direction: Literal["L", ".", "R"],
+        last_force_moment: int,
+    ):
+        self.direction = direction
+        self.last_force_moment = last_force_moment
 
 
 class Solution:
