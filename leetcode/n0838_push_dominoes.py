@@ -1,4 +1,5 @@
 import copy
+import dataclasses
 from collections import (
     deque,
 )
