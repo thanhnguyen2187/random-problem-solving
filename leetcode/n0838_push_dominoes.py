@@ -88,3 +88,8 @@ class Solution:
                 ):
                     typed_domino.direction = "."
 
+            return "".join([
+                typed_domino.direction
+                for typed_domino in typed_dominoes
+            ])
+
