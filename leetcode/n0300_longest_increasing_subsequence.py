@@ -21,58 +21,26 @@ class Node(NamedTuple):
 
 class Solution:
 
-    def add_child(
-        self,
-        node: Node,
-        value: int,
-    ):
-        if node.value < value:
-            marked = False
-            for child in node.children:
-                if child.value < value:
-                    self.add_child(
-                        node=child,
-                        value=value,
-                    )
-                    marked = True
-            if not marked:
-                node.children.append(
-                    Node(
-                        value=value,
-                        children=[],
-                    )
-                )
-
-    def find_maximal_depth(
-        self,
-        node: Node,
-    ) -> int:
-        if len(node.children) == 0:
-            return 1
-        else:
-            return 1 + max(
-                self.find_maximal_depth(node=child)
-                for child in node.children
-            )
-
     def lengthOfLIS(
         self,
         nums: List[int],
     ) -> int:
 
-        root = Node(
-            value=float("-inf"),
-            children=[],
-        )
+        n = len(nums)
+        LIS = [
+            1
+            for _ in range(n)
+        ]
 
-        for number in nums:
-            self.add_child(
-                node=root,
-                value=number,
-            )
+        for first_index in range(1, n):
+            for second_index in range(0, first_index):
+                if nums[first_index] > nums[second_index]:
+                    LIS[first_index] = max(
+                        LIS[second_index] + 1,
+                        LIS[first_index],
+                    )
 
-        return self.find_maximal_depth(node=root) - 1
-
+        return max(LIS)
 
 
 if __name__ == '__main__':
