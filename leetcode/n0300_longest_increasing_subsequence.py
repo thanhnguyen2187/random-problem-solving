@@ -42,7 +42,6 @@ class Solution:
 
         return max(LIS)
 
-
 if __name__ == '__main__':
     solution = Solution()
     print(
