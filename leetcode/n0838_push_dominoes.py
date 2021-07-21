@@ -38,6 +38,7 @@ class Solution:
                 last_force_moment=0,
             )
             for domino in dominoes
+            if domino in ("L", ".", "R")
         ]
 
         forces = deque(
