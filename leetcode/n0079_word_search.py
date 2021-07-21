@@ -2,11 +2,15 @@ from typing import (
     List,
     NamedTuple,
 )
+from itertools import (
+    product,
+)
 
 
-class Coordinate(NamedTuple):
+class Cell(NamedTuple):
     x: int
     y: int
+    character: str
 
 
 class Solution:
@@ -18,46 +22,46 @@ class Solution:
         width: int,
         height: int,
         word: str,
-        current_word: str,
-        current_coordinate: Coordinate,
-    ) -> bool:
-
-        current_word += board[current_coordinate.y][current_coordinate.x]
-        if not word.startswith(current_word):
+        depth: int,
+        current_cell: Cell,
+    ):
+        if current_cell.character != word[depth]:
             return False
-        elif word == current_word:
+        elif depth == len(word) - 1 and current_cell.character == word[depth]:
             return True
 
-        marks[current_coordinate.y][current_coordinate.x] = True
-
-        possible = [
+        marks[current_cell.y][current_cell.x] = True
+        possible = (
             self.attempt(
                 board=board,
                 marks=marks,
                 width=width,
                 height=height,
                 word=word,
-                current_word=current_word,
-                current_coordinate=coordinate,
+                depth=depth + 1,
+                current_cell=adjacent_cell,
             )
-            for coordinate in [
-                Coordinate(x=current_coordinate.x - 1, y=current_coordinate.y),
-                Coordinate(x=current_coordinate.x + 1, y=current_coordinate.y),
-                Coordinate(x=current_coordinate.x, y=current_coordinate.y - 1),
-                Coordinate(x=current_coordinate.x, y=current_coordinate.y + 1),
+            for adjacent_cell in [
+                Cell(x=x, y=y, character=board[y][x])
+                for x, y in [
+                    (current_cell.x + 1, current_cell.y),
+                    (current_cell.x - 1, current_cell.y),
+                    (current_cell.x, current_cell.y + 1),
+                    (current_cell.x, current_cell.y - 1),
+                ]
+                if (
+                    (0 <= x < width) and
+                    (0 <= y < height) and
+                    not marks[y][x]
+                )
             ]
-            if (
-                (0 <= coordinate.x < width) and
-                (0 <= coordinate.y < height) and
-                not marks[coordinate.y][coordinate.x]
-            )
-        ]
+        )
 
-        # if x != current_coordinate.x and y != current_coordinate.y
-        marks[current_coordinate.y][current_coordinate.x] = False
-
-        return any(possible)
-
+        if any(possible):
+            return True
+        else:
+            marks[current_cell.y][current_cell.x] = False
+            return False
 
     def exist(
         self,
@@ -82,11 +86,17 @@ class Solution:
                 width=width,
                 height=height,
                 word=word,
-                current_word="",
-                current_coordinate=Coordinate(x=x, y=y),
+                depth=0,
+                current_cell=Cell(
+                    x=x,
+                    y=y,
+                    character=board[y][x],
+                )
             )
-            for x in range(width)
-            for y in range(height)
+            for x, y in product(
+                range(0, width),
+                range(0, height),
+            )
         )
 
 
