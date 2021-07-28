@@ -41,13 +41,19 @@ class ListNode:
 
 
 class TreeNode:
-    def __init__(self, val=0, left=None, right=None):
+    def __init__(
+        self,
+        val: int = 0,
+        left: 'TreeNode' = None,
+        right: 'TreeNode' = None,
+    ):
         self.val = val
         self.left = left
         self.right = right
 
 
 class Solution:
+
     def f(
         self,
     ) -> int:
