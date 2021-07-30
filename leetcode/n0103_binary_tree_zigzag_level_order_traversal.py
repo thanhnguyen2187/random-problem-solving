@@ -58,33 +58,21 @@ class Solution:
     def traverse(
         self,
         root: TreeNode,
-        nodes_dict: DefaultDict[int, List[int]],
+        level: int,
+        nodes_dict: DefaultDict[int, list],
     ):
-        nodes_queue = defaultdict(deque)
-        nodes_queue[0].append(root)
-
-        level_current = 0
-        level_max = 0
-        while level_current <= level_max:
-
-            node: TreeNode
-            if level_current % 2 == 1:
-                node = nodes_queue[level_current].pop()
-            else:
-                node = nodes_queue[level_current].popleft()
-
-            if node is not None:
-                nodes_dict[level_current].append(node.val)
-                nodes_queue[level_current + 1].append(node.left)
-                nodes_queue[level_current + 1].append(node.right)
-
-                level_max = max(
-                    level_current + 1,
-                    level_max,
-                )
-
-            if len(nodes_queue[level_current]) == 0:
-                level_current += 1
+        if root is not None:
+            nodes_dict[level].append(root.val)
+            self.traverse(
+                root=root.left,
+                level=level + 1,
+                nodes_dict=nodes_dict,
+            )
+            self.traverse(
+                root=root.right,
+                level=level + 1,
+                nodes_dict=nodes_dict,
+            )
 
 
     def zigzagLevelOrder(
@@ -95,15 +83,54 @@ class Solution:
 
         self.traverse(
             root=root,
-            # level=0,
-            # counter=0,
+            level=0,
             nodes_dict=nodes_dict,
         )
 
-        return list(
-            nodes_dict.values(),
-        )
+        return [
+            (
+                nodes
+                if index % 2 == 0
+                else (
+                    list(reversed(nodes))
+                )
+            )
+            for index, nodes in nodes_dict.items()
+        ]
 
 
 if __name__ == '__main__':
     solution = Solution()
+    print(
+        solution.zigzagLevelOrder(
+            root=TreeNode(
+                val=3,
+                left=TreeNode(
+                    val=9,
+                    left=TreeNode(
+                        val=8,
+                        left=TreeNode(val=4),
+                        right=TreeNode(val=2),
+                    ),
+                    right=TreeNode(
+                        val=5,
+                        left=TreeNode(val=1),
+                        right=TreeNode(val=11),
+                    ),
+                ),
+                right=TreeNode(
+                    val=20,
+                    left=TreeNode(
+                        val=15,
+                        left=TreeNode(val=13),
+                        right=TreeNode(val=14),
+                    ),
+                    right=TreeNode(
+                        val=7,
+                        left=TreeNode(val=9),
+                        right=TreeNode(val=21),
+                    ),
+                )
+            ),
+        )
+    )
