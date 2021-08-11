@@ -1,0 +1,15 @@
+@startuml
+'https://plantuml.com/sequence-diagram
+
+start
+:Cleanse search query;
+:Fetch data by full-text search;
+: Do POS tag cleansed search query
+(do word segmentation, and then label
+the segmented words as nouns, verbs, etc.);
+:Do POS tag the potential products' name and description;
+:Score by number of similar nouns between
+the search query and the product's text;
+:Return the top 5 products;
+stop
+@enduml

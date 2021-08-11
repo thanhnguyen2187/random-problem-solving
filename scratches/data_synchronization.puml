@@ -1,0 +1,15 @@
+@startuml
+'https://plantuml.com/sequence-diagram
+
+autonumber
+
+participant "Data Store" as ds
+participant "Synchronizer" as s
+participant "Database" as db
+
+s -> s: [check time]
+ds <- s: curl ...
+s -> db: mysql --host=...
+db -> s: [\n  {"record_1": "..."},\n  {"record_2": "..."}\n]
+ds <- s: curl ...
+@enduml

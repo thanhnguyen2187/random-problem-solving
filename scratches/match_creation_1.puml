@@ -1,0 +1,22 @@
+@startuml
+'https://plantuml.com/sequence-diagram
+
+autonumber
+
+actor "Admin" as a1
+participant "Product Matching\nService" as p1
+participant "Data Store" as p2
+
+a1 -> p1: choose a source product
+
+p1 -> p2: query source product data
+p1 <-- p2: response source product data
+
+p1 -> p1: calculate potential matches
+a1 <-- p1: response potential matches
+
+a1 -> p1: approve a match
+p1 -> p2: persist the match
+p1 -> p2: persist the approval
+
+@enduml

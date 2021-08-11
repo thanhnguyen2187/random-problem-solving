@@ -1,0 +1,21 @@
+@startuml
+'https://plantuml.com/sequence-diagram
+
+autonumber
+
+participant "Data Store" as p1
+participant "Synchronizer" as p2
+participant "MinIO Public" as p3
+participant "Data Warehouse" as p4
+
+p3 <- p4: publish master product data
+p3 <- p4: publish source product data
+p3 <- p4: publish match data
+p2 -> p2: check time
+p1 <- p2: query latest ingestion state
+p1 --> p2: response latest ingestion state
+p2 -> p3: query new data
+p2 <-- p3: response new data
+p1 <- p2: push new data
+
+@enduml
