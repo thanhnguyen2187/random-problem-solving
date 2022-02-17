@@ -1,4 +1,5 @@
 from typing import (
+    Callable,
     DefaultDict,
     Dict,
     Iterator,
@@ -55,45 +56,48 @@ class TreeNode:
 
 class Solution:
 
+    def count(
+        self,
+        string: str,
+        predicate: Callable[[str], int],
+    ) -> List[int]:
+
+        result = [0]
+        for character in string:
+            result.append(
+                result[-1] + (
+                    1
+                    if predicate(character)
+                    else 0
+                )
+            )
+
+        return result
+
     def minFlipsMonoIncr(
         self,
         s: str,
     ) -> int:
 
-        counting_dict: DefaultDict[str, List] = defaultdict(list)
-
-        for previous_character, character in zip(
-            " " + s,
-            s,
-        ):
-            if previous_character != character:
-                counting_dict[character].append(1)
-            else:
-                counting_dict[character][-1] += 1
-
-        zeroes = counting_dict["0"]
-        ones = counting_dict["1"]
-
-        if s[0] == "0":
-            ones.insert(0, 0)
-        if s[-1] == "1":
-            zeroes.append(0)
-
-        sums = [
-            sum(
-                chain(
-                    ones[:index],
-                    zeroes[index:],
-                    # chain(
-                    #     zeroes[:index],
-                    #     ones[index:],
-                    # )
-                )
+        ones_count_left_to_right = (
+            self.count(
+                string=s,
+                predicate=lambda character: character == "1",
             )
-            for index in range(len(ones) + 1)
-        ]
+        )
+        zeroes_count_right_to_left = reversed(
+            self.count(
+                string="".join(reversed(s)),
+                predicate=lambda character: character == "0",
+            )
+        )
 
-        return min(sums)
+        return min(
+            one_flip_count + zero_flip_count
+            for one_flip_count, zero_flip_count in zip(
+                ones_count_left_to_right, zeroes_count_right_to_left,
+            )
+        )
 
 
 if __name__ == '__main__':
@@ -104,6 +108,7 @@ if __name__ == '__main__':
         "101010100010101000101111110101111010",
         "1000001011111111010",
         "00110",
+        "10111001010",
     ]:
         print(
             solution.minFlipsMonoIncr(s=s)

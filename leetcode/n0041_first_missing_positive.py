@@ -3,6 +3,7 @@ from typing import (
     Iterator,
 )
 
+
 class Solution:
 
     def natural_numbers(self) -> Iterator[int]:
