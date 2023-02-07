@@ -33,16 +33,6 @@ from collections import (
 )
 
 
-class ListNode:
-    def __init__(
-            self,
-            x: int,
-            next: Optional['ListNode'] = None,
-    ):
-        self.val: int = x
-        self.next: 'ListNode' = next
-
-
 class TreeNode:
     def __init__(
         self,
@@ -56,8 +46,20 @@ class TreeNode:
 
 
 class Solution:
-    def f(self) -> int:
-        ...
+    def isSameTree(self, p: Optional[TreeNode], q: Optional[TreeNode]) -> bool:
+        match p, q:
+            case (None, None):
+                return True
+            case (None, _):
+                return False
+            case (_, None):
+                return False
+            case _:
+                return (
+                    p.val == q.val and
+                    self.isSameTree(p.left, q.left) and
+                    self.isSameTree(p.right, q.right)
+                )
 
 
 if __name__ == '__main__':

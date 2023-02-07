@@ -33,31 +33,13 @@ from collections import (
 )
 
 
-class ListNode:
-    def __init__(
-            self,
-            x: int,
-            next: Optional['ListNode'] = None,
-    ):
-        self.val: int = x
-        self.next: 'ListNode' = next
-
-
-class TreeNode:
-    def __init__(
-        self,
-        val: int = 0,
-        left: 'TreeNode' = None,
-        right: 'TreeNode' = None,
-    ):
-        self.val = val
-        self.left = left
-        self.right = right
-
-
 class Solution:
-    def f(self) -> int:
-        ...
+    def shuffle(self, nums: List[int], n: int) -> List[int]:
+        return [
+            element
+            for pair in zip(nums[:n], nums[n:])
+            for element in pair
+        ]
 
 
 if __name__ == '__main__':

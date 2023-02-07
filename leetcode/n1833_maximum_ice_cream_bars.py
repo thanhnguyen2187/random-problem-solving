@@ -15,7 +15,6 @@ from bisect import (
 from itertools import (
     accumulate,
     chain,
-    combinations,
     cycle,
     islice,
     permutations,
@@ -29,36 +28,19 @@ from functools import (
 from collections import (
     defaultdict,
     deque,
-    Counter,
 )
 
 
-class ListNode:
-    def __init__(
-            self,
-            x: int,
-            next: Optional['ListNode'] = None,
-    ):
-        self.val: int = x
-        self.next: 'ListNode' = next
-
-
-class TreeNode:
-    def __init__(
-        self,
-        val: int = 0,
-        left: 'TreeNode' = None,
-        right: 'TreeNode' = None,
-    ):
-        self.val = val
-        self.left = left
-        self.right = right
-
-
 class Solution:
-    def f(self) -> int:
-        ...
+    def maxIceCream(self, costs: List[int], coins: int) -> int:
+        costs = sorted(costs)
+        total_costs = list(accumulate(costs))
+        optimal_number = bisect_right(total_costs, coins)
+        return optimal_number
 
 
 if __name__ == '__main__':
     solution = Solution()
+    print(solution.maxIceCream(costs=[1, 3, 2, 4, 1], coins=7))
+    print(solution.maxIceCream(costs=[10, 6, 8, 7, 7, 8], coins=5))
+    print(solution.maxIceCream(costs=[1, 6, 3, 1, 2, 5], coins=20))

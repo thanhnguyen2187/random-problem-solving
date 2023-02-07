@@ -33,32 +33,25 @@ from collections import (
 )
 
 
-class ListNode:
-    def __init__(
-            self,
-            x: int,
-            next: Optional['ListNode'] = None,
-    ):
-        self.val: int = x
-        self.next: 'ListNode' = next
-
-
-class TreeNode:
-    def __init__(
-        self,
-        val: int = 0,
-        left: 'TreeNode' = None,
-        right: 'TreeNode' = None,
-    ):
-        self.val = val
-        self.left = left
-        self.right = right
-
-
 class Solution:
-    def f(self) -> int:
-        ...
+    def subarraysDivByK(self, nums: List[int], k: int) -> int:
+        remainders = Counter(
+            num % k
+            for num in accumulate(nums)
+        )
+        result = remainders[0]
+        result += sum(
+            x * (x - 1) // 2
+            for x in remainders.values()
+        )
+        return result
 
 
 if __name__ == '__main__':
     solution = Solution()
+    print(
+        solution.subarraysDivByK(
+            nums=[4, 5, 0, -2, -3, 1],
+            k=5,
+        )
+    )

@@ -33,31 +33,19 @@ from collections import (
 )
 
 
-class ListNode:
-    def __init__(
-            self,
-            x: int,
-            next: Optional['ListNode'] = None,
-    ):
-        self.val: int = x
-        self.next: 'ListNode' = next
-
-
-class TreeNode:
-    def __init__(
-        self,
-        val: int = 0,
-        left: 'TreeNode' = None,
-        right: 'TreeNode' = None,
-    ):
-        self.val = val
-        self.left = left
-        self.right = right
-
-
 class Solution:
-    def f(self) -> int:
-        ...
+    def findAnagrams(self, s: str, p: str) -> List[int]:
+        s_substrings = [
+            s[index:index + len(p)]
+            for index in range(len(s) + 1 - len(p))
+        ]
+        p_sorted = sorted(p)
+        result = [
+            index
+            for index, substring in enumerate(s_substrings)
+            if sorted(substring) == p_sorted
+        ]
+        return result
 
 
 if __name__ == '__main__':

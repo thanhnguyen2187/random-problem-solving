@@ -15,7 +15,6 @@ from bisect import (
 from itertools import (
     accumulate,
     chain,
-    combinations,
     cycle,
     islice,
     permutations,
@@ -29,35 +28,16 @@ from functools import (
 from collections import (
     defaultdict,
     deque,
-    Counter,
 )
 
 
-class ListNode:
-    def __init__(
-            self,
-            x: int,
-            next: Optional['ListNode'] = None,
-    ):
-        self.val: int = x
-        self.next: 'ListNode' = next
-
-
-class TreeNode:
-    def __init__(
-        self,
-        val: int = 0,
-        left: 'TreeNode' = None,
-        right: 'TreeNode' = None,
-    ):
-        self.val = val
-        self.left = left
-        self.right = right
+def all_cap(word: str) -> bool:
+    return word.isupper()
 
 
 class Solution:
-    def f(self) -> int:
-        ...
+    def detectCapitalUse(self, word: str) -> bool:
+        return word.isupper() or word.islower() or word.istitle()
 
 
 if __name__ == '__main__':

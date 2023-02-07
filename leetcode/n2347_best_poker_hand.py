@@ -33,31 +33,18 @@ from collections import (
 )
 
 
-class ListNode:
-    def __init__(
-            self,
-            x: int,
-            next: Optional['ListNode'] = None,
-    ):
-        self.val: int = x
-        self.next: 'ListNode' = next
-
-
-class TreeNode:
-    def __init__(
-        self,
-        val: int = 0,
-        left: 'TreeNode' = None,
-        right: 'TreeNode' = None,
-    ):
-        self.val = val
-        self.left = left
-        self.right = right
-
-
 class Solution:
-    def f(self) -> int:
-        ...
+    def bestHand(self, ranks: List[int], suits: List[str]) -> str:
+        if len(set(suits)) == 1:
+            return "Flush"
+        ranks_counter = Counter(ranks)
+        highest_rank_count = max(ranks_counter.values())
+        if highest_rank_count >= 3:
+            return "Three of a Kind"
+        elif highest_rank_count == 2:
+            return "Pair"
+        else:
+            return "High Card"
 
 
 if __name__ == '__main__':

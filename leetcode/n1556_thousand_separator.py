@@ -33,32 +33,20 @@ from collections import (
 )
 
 
-class ListNode:
-    def __init__(
-            self,
-            x: int,
-            next: Optional['ListNode'] = None,
-    ):
-        self.val: int = x
-        self.next: 'ListNode' = next
-
-
-class TreeNode:
-    def __init__(
-        self,
-        val: int = 0,
-        left: 'TreeNode' = None,
-        right: 'TreeNode' = None,
-    ):
-        self.val = val
-        self.left = left
-        self.right = right
-
-
 class Solution:
-    def f(self) -> int:
-        ...
+    def thousandSeparator(self, n: int) -> str:
+        n_str = list(reversed(str(n)))
+        digit_count = 3
+        chunks = [
+            ''.join(n_str[index:index + digit_count])
+            for index in range(0, len(n_str), digit_count)
+        ]
+        result = '.'.join(chunks)
+        result = ''.join(reversed(result))
+        return result
 
 
 if __name__ == '__main__':
     solution = Solution()
+    print(solution.thousandSeparator(n=1000))
+    print(solution.thousandSeparator(n=100000))

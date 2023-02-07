@@ -33,16 +33,6 @@ from collections import (
 )
 
 
-class ListNode:
-    def __init__(
-            self,
-            x: int,
-            next: Optional['ListNode'] = None,
-    ):
-        self.val: int = x
-        self.next: 'ListNode' = next
-
-
 class TreeNode:
     def __init__(
         self,
@@ -56,8 +46,14 @@ class TreeNode:
 
 
 class Solution:
-    def f(self) -> int:
-        ...
+    def preorderTraversal(self, root: Optional[TreeNode]) -> List[int]:
+        if root is None:
+            return []
+        return [
+            root.val,
+            *self.preorderTraversal(root=root.left),
+            *self.preorderTraversal(root=root.right),
+        ]
 
 
 if __name__ == '__main__':
