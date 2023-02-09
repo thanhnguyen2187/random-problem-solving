@@ -11,8 +11,8 @@
 
 ;; part 1
 (as-> (slurp "inputs/day_1.txt") _
+      (str/trim-newline _)
       (str/split _ #"\n\n")
-      (map str/trim-newline _)
       (map #(str/split % #"\n") _)
       (map to-ints _)
       (map sum _)
@@ -21,8 +21,8 @@
 
 ;; part 2
 (as-> (slurp "inputs/day_1.txt") _
+      (str/trim-newline _)
       (str/split _ #"\n\n")
-      (map str/trim-newline _)
       (map #(str/split % #"\n") _)
       (map to-ints _)
       (map sum _)
