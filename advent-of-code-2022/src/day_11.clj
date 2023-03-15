@@ -3,9 +3,6 @@
             [clojure.core.match :refer [match]]
             [instaparse.core :as insta]))
 
-(defn create-monkey
-  [operation-line test-lines])
-
 (def sample-monkey
   {:worry-levels  [79 98]
    :operation-fn  (fn [old] (* old 19))
@@ -102,6 +99,14 @@
                        destination-false))]
     func))
 
+(defn parse-monkey-test-num
+  [monkey]
+  (-> monkey
+      (get-in [4 1 1 1])
+      (str/split #" ")
+      (last)
+      (Integer/parseInt)))
+
 (defn parse-monkey-test-destination-true
   [monkey]
   (->> (get-in monkey [4 2 1 1])
@@ -121,6 +126,7 @@
                     monkey
                     (parse-monkey-test-destination-true monkey)
                     (parse-monkey-test-destination-false monkey))
+   :test-num      (parse-monkey-test-num monkey)            ;; needed for optimization
    :inspect-count 0
    })
 
@@ -141,19 +147,19 @@
         worry-levels (monkey :worry-levels)
         operation-fn (monkey :operation-fn)
         test-fn (monkey :test-fn)
-        items-with-new-holders (map (fn [worry-level]
-                                      (let [new-worry-level (-> worry-level
-                                                                (operation-fn)
-                                                                (/ 3)
-                                                                (int))
-                                            new-holder (test-fn new-worry-level)]
-                                        [new-worry-level new-holder]))
-                                    worry-levels)]
+        worry-levels-with-new-holders (map (fn [worry-level]
+                                             (let [new-worry-level (-> worry-level
+                                                                       (operation-fn)
+                                                                       (/ 3)
+                                                                       (int))
+                                                   new-holder (test-fn new-worry-level)]
+                                               [new-worry-level new-holder]))
+                                           worry-levels)]
     (-> (reduce (fn [state [item new-holder]]
                   (update-in state [new-holder :worry-levels]
                              conj item))
                 state
-                items-with-new-holders)
+                worry-levels-with-new-holders)
         (update-in [index :inspect-count] + (count worry-levels))
         (assoc-in [index :worry-levels] []))))
 
@@ -162,20 +168,36 @@
   (let [monkey (nth state index)
         worry-levels (monkey :worry-levels)
         operation-fn (monkey :operation-fn)
+        test-num (monkey :test-num)
         test-fn (monkey :test-fn)
-        items-with-new-holders (map (fn [worry-level]
-                                      (let [new-worry-level (-> worry-level
-                                                                (operation-fn))
-                                            new-holder (test-fn new-worry-level)]
-                                        [new-worry-level new-holder]))
-                                    worry-levels)]
+        worry-levels-with-new-holders (map (fn [worry-level]
+                                             (let [new-worry-level (-> worry-level
+                                                                       (operation-fn))
+                                                   new-holder (test-fn new-worry-level)]
+                                               [new-worry-level new-holder]))
+                                           worry-levels)]
     (-> (reduce (fn [state [item new-holder]]
                   (update-in state [new-holder :worry-levels]
                              conj item))
                 state
-                items-with-new-holders)
+                worry-levels-with-new-holders)
         (update-in [index :inspect-count] + (count worry-levels))
         (assoc-in [index :worry-levels] []))))
+
+(defn create-clear-worry-levels
+  [gcd-test-nums]
+  (fn [monkey]
+    (update monkey :worry-levels
+            (fn [worry-levels]
+              (map (fn [worry-level]
+                     (mod worry-level gcd-test-nums))
+                   worry-levels)))))
+
+(defn calculate-gcd-test-nums
+  [state]
+  (->> state
+       (map :test-num)
+       (reduce *)))
 
 (defn advance-round
   [state]
@@ -185,16 +207,20 @@
 
 (defn advance-round-2
   [state]
-  (reduce advance-turn-2
-          state
-          (range (count state))))
+  (let [gcd-test-nums (calculate-gcd-test-nums state)]
+    (->> (reduce advance-turn-2
+                 state
+                 (range (count state)))
+         (mapv (create-clear-worry-levels gcd-test-nums))))
 
-(let [monkeys (->> ;;(slurp "inputs/day_11.txt")
-                   (slurp "inputs/day_11_sample.txt")
-                   (parse-monkeys)
-                   (drop 1)
-                   (mapv parse-monkey)
-                   )
+  )
+
+(let [monkeys (->>                                          ;;(slurp "inputs/day_11.txt")
+                (slurp "inputs/day_11.txt")
+                (parse-monkeys)
+                (drop 1)
+                (mapv parse-monkey)
+                )
       part-1-answer (->> monkeys
                          ((apply comp (repeat 20 advance-round)))
                          (map :inspect-count)
@@ -202,15 +228,16 @@
                          (take-last 2)
                          (apply *))
       part-2-answer (->> monkeys
-                         ((apply comp (repeat 20 advance-round-2)))
+                         ((->> advance-round-2
+                               (repeat 10000)
+                               (apply comp)))
                          (map :inspect-count)
                          (sort)
-                         ;;(take-last 2)
-                         ;;(apply *)
+                         (take-last 2)
+                         (apply *)
                          )
       ]
   [part-1-answer
-   ;;part-2-answer
-   ])
-
+   part-2-answer]
+  )
 
