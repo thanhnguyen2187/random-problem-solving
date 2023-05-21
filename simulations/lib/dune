@@ -1,3 +1,4 @@
 (library
  (name simulations)
- (libraries eio_main))
+ (libraries eio_main)
+ (preprocess (pps ppx_deriving.show)))
