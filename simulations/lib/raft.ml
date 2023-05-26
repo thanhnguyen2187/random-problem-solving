@@ -9,6 +9,7 @@ type process_state =
 type message_content =
     | Heartbeat
     | Timeout
+    | VoteRequest
     | Promotion
 [@@deriving show]
 
@@ -27,7 +28,7 @@ module type Process_type = sig
     val outbox : message Eio.Stream.t
     val term : int Atomic.t
 
-    val vote_counter : (int * int, int) Hashtbl.t
+    val voted_for : int Atomic.t
     val clock : Eio.Time.clock
 
     val last_heartbeat : float Atomic.t
@@ -39,9 +40,10 @@ let create_process
     (max_index : int)
     (outbox: message Eio.Stream.t)
     (clock : Eio.Time.clock)
-    (vote_counter : (int * int, int) Hashtbl.t)
+    (* (vote_counter : (int * int, int) Hashtbl.t) *)
     (timeout_s : float)
     : (module Process_type) =
+    let () = traceln "Created process %d with timeout %f" index timeout_s in
     (module struct
         let index = index
         let max_index = max_index
@@ -50,12 +52,25 @@ let create_process
         let outbox = outbox
         let term = Atomic.make 0
 
-        let vote_counter = vote_counter
+        let voted_for = Atomic.make (-1)
         let clock = clock
 
         let last_heartbeat = Atomic.make (Unix.gettimeofday ())
         let timeout_s = timeout_s
     end)
+
+let create_message
+    (proc : (module Process_type))
+    (to_index : int)
+    (msg_content : message_content)
+    : message =
+    let module Proc = (val proc) in
+    {
+        from_index = Proc.index;
+        to_index;
+        term = Atomic.get Proc.term;
+        content = msg_content;
+    }
 
 let create_heartbeat_monitor (proc: (module Process_type)) : unit -> unit =
     fun () ->
@@ -66,19 +81,18 @@ let create_heartbeat_monitor (proc: (module Process_type)) : unit -> unit =
             let gap = current_time -. Atomic.get Proc.last_heartbeat in
             if (Atomic.get Proc.state != Leader) && (gap >= Proc.timeout_s)
             then
-                Eio.Stream.add Proc.inbox
-                {
-                    from_index = Proc.index;
-                    to_index = Proc.index;
-                    content = Timeout;
-                    term = Atomic.get Proc.term;
-                };
+                (let msg = create_message proc Proc.index Timeout in
+                Eio.Stream.add Proc.inbox msg);
             Eio.Time.sleep Proc.clock 1.0;
         done
 
 let print_state (proc : (module Process_type)) : unit =
     let module Proc = (val proc) in
-    traceln "Process %d is in state %s" Proc.index (show_process_state (Atomic.get Proc.state))
+    traceln "Process %d is in term %d and in state %s and voted for process %d"
+        Proc.index
+        (Atomic.get Proc.term)
+        (show_process_state (Atomic.get Proc.state))
+        (Atomic.get Proc.voted_for)
 
 let create_state_printer (proc : (module Process_type)) : unit -> unit =
     fun () ->
@@ -90,7 +104,19 @@ let create_state_printer (proc : (module Process_type)) : unit -> unit =
         done
 
 let print_message (msg : message) : unit =
-    traceln "Process %d received message %s from process %d" msg.to_index (show_message_content msg.content) msg.from_index
+    traceln "Process %d received message %s in term %d from process %d"
+        msg.to_index
+        (show_message_content msg.content)
+        msg.term
+        msg.from_index
+
+let send_to_all (proc: (module Process_type)) (msg_content : message_content) : unit =
+    let module Proc = (val proc) in
+    for i = 0 to Proc.max_index do
+        if i != Proc.index then
+            let msg = create_message proc i msg_content in
+            Eio.Stream.add Proc.outbox msg;
+    done
 
 let create_state_handler (proc: (module Process_type)) : unit -> unit =
     fun () ->
@@ -101,18 +127,13 @@ let create_state_handler (proc: (module Process_type)) : unit -> unit =
             (* TODO: investigate why putting Eio.Time.sleep at the end doesn't
                      work *)
             (* | Follower -> () *)
-            (* | Candidate -> () *)
+            | Candidate ->
+                send_to_all proc VoteRequest;
+                Eio.Time.sleep Proc.clock 2.0;
             | Leader ->
-                for i = 0 to Proc.max_index do
-                    Eio.Stream.add Proc.outbox {
-                        from_index = Proc.index;
-                        to_index = i;
-                        term = Atomic.get Proc.term;
-                        content = Heartbeat;
-                    }
-                done;
-                Eio.Time.sleep Proc.clock 3.0;
-            | _ -> Eio.Time.sleep Proc.clock 3.0;
+                send_to_all proc Heartbeat;
+                Eio.Time.sleep Proc.clock 2.0;
+            | _ -> Eio.Time.sleep Proc.clock 2.0;
 
             (* Eio.Time.sleep Proc.clock 3.0; *)
         done
@@ -134,44 +155,67 @@ let create_message_handler (proc: (module Process_type)) : unit -> unit =
         while true do
             let msg = Eio.Stream.take Proc.inbox in
             let () = print_message msg in
-            match Atomic.get Proc.state, msg.content with
-            | Follower, Timeout ->
-                Atomic.set Proc.state Candidate;
+            match msg.content, Atomic.get Proc.state with
+            | Heartbeat, Follower ->
+                if (msg.term >= Atomic.get Proc.term)
+                then
+                    Atomic.set Proc.last_heartbeat (Unix.gettimeofday ());
+            | Heartbeat, Candidate ->
+                Atomic.set Proc.state Follower;
                 Atomic.set Proc.last_heartbeat (Unix.gettimeofday ());
-            | Follower, Heartbeat ->
-                Atomic.set Proc.last_heartbeat (Unix.gettimeofday ());
-            | Follower, Promotion ->
+                Atomic.set Proc.voted_for (-1);
+
+            | Timeout, Follower ->
+                if (Atomic.get Proc.voted_for) == (-1)
+                then
+                    Atomic.set Proc.state Candidate;
+                    Atomic.set Proc.voted_for Proc.index;
+                    Atomic.incr Proc.term;
+                    Atomic.set Proc.last_heartbeat (Unix.gettimeofday ());
+                    send_to_all proc VoteRequest;
+            | Timeout, Candidate ->
+                Atomic.incr Proc.term;
+
+            | Promotion, Follower
+            | Promotion, Candidate ->
+                Atomic.set Proc.voted_for (-1);
                 Atomic.set Proc.state Leader;
-            | _ -> ();
+
+            | VoteRequest, Follower
+            | VoteRequest, Candidate ->
+                if Atomic.get Proc.voted_for = (-1) && Atomic.get Proc.term < msg.term
+                then Atomic.set Proc.voted_for msg.from_index;
+
+            | _ -> let _ = failwith "unreachable code" in ();
+
             Eio.Time.sleep Proc.clock 1.0
         done
 
 let main _env =
     let clock = Eio.Stdenv.clock _env in
-    let vote_counter = Hashtbl.create 20 in
-    let outbox = (Eio.Stream.create 3) in
+    let outbox = (Eio.Stream.create 5) in
     let processes = List.init
         5
         (fun i -> create_process
             i 4
             outbox
             clock
-            vote_counter
-            4.0)
+            (4.0 +. (Random.float 2.0))
+            )
     in ();
 
-    let module Proc = (val (List.nth processes 3)) in
-    Eio.Stream.add Proc.inbox {
-        term = 0;
-        from_index = -1;
-        to_index = 3;
-        content = Promotion;
-    };
+    (* let module Proc = (val (List.nth processes 3)) in *)
+    (* Eio.Stream.add Proc.inbox { *)
+    (*     term = 0; *)
+    (*     from_index = -1; *)
+    (*     to_index = 3; *)
+    (*     content = Promotion; *)
+    (* }; *)
 
     Eio.Fiber.all [
         (create_outbox_orchestrator outbox processes);
         (fun () -> Eio.Fiber.all (List.map create_heartbeat_monitor processes));
-        (fun () -> Eio.Fiber.all (List.map create_state_printer processes));
         (fun () -> Eio.Fiber.all (List.map create_message_handler processes));
         (fun () -> Eio.Fiber.all (List.map create_state_handler processes));
+        (fun () -> Eio.Fiber.all (List.map create_state_printer processes));
     ];
