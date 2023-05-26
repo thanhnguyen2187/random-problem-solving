@@ -88,9 +88,9 @@ let create_heartbeat_monitor (proc: (module Process_type)) : unit -> unit =
 
 let print_state (proc : (module Process_type)) : unit =
     let module Proc = (val proc) in
-    traceln "Process %d is in term %d and in state %s and voted for process %d"
-        Proc.index
+    traceln "Term %d; Process %d; State %s; Voted for process %d"
         (Atomic.get Proc.term)
+        Proc.index
         (show_process_state (Atomic.get Proc.state))
         (Atomic.get Proc.voted_for)
 
@@ -104,11 +104,11 @@ let create_state_printer (proc : (module Process_type)) : unit -> unit =
         done
 
 let print_message (msg : message) : unit =
-    traceln "Process %d received message %s in term %d from process %d"
-        msg.to_index
-        (show_message_content msg.content)
+    traceln "Term %d; From process %d; To process %d; Message %s"
         msg.term
         msg.from_index
+        msg.to_index
+        (show_message_content msg.content)
 
 let send_to_all (proc: (module Process_type)) (msg_content : message_content) : unit =
     let module Proc = (val proc) in
