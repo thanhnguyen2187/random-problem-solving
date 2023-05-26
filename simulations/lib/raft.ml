@@ -159,6 +159,7 @@ let create_message_handler (proc: (module Process_type)) : unit -> unit =
             | Heartbeat, Follower ->
                 if (msg.term >= Atomic.get Proc.term)
                 then
+                    Atomic.set Proc.term msg.term;
                     Atomic.set Proc.last_heartbeat (Unix.gettimeofday ());
             | Heartbeat, Candidate ->
                 Atomic.set Proc.state Follower;
@@ -166,13 +167,13 @@ let create_message_handler (proc: (module Process_type)) : unit -> unit =
                 Atomic.set Proc.voted_for (-1);
 
             | Timeout, Follower ->
-                if (Atomic.get Proc.voted_for) == (-1)
-                then
+                if Atomic.get Proc.voted_for = (-1)
+                then begin
                     Atomic.set Proc.state Candidate;
                     Atomic.set Proc.voted_for Proc.index;
                     Atomic.incr Proc.term;
-                    Atomic.set Proc.last_heartbeat (Unix.gettimeofday ());
                     send_to_all proc VoteRequest;
+                end
             | Timeout, Candidate ->
                 Atomic.incr Proc.term;
 
@@ -183,7 +184,8 @@ let create_message_handler (proc: (module Process_type)) : unit -> unit =
 
             | VoteRequest, Follower
             | VoteRequest, Candidate ->
-                if Atomic.get Proc.voted_for = (-1) && Atomic.get Proc.term < msg.term
+                if Atomic.get Proc.voted_for = (-1)
+                && Atomic.get Proc.term < msg.term
                 then Atomic.set Proc.voted_for msg.from_index;
 
             | _ -> let _ = failwith "unreachable code" in ();
