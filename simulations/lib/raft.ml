@@ -10,6 +10,7 @@ type message_content =
     | Heartbeat
     | Timeout
     | VoteRequest
+    | VoteResponse
     | Promotion
 [@@deriving show]
 
@@ -29,6 +30,7 @@ module type Process_type = sig
     val term : int Atomic.t
 
     val voted_for : int Atomic.t
+    val vote_count : int Atomic.t
     val clock : Eio.Time.clock
 
     val last_heartbeat : float Atomic.t
@@ -53,6 +55,7 @@ let create_process
         let term = Atomic.make 0
 
         let voted_for = Atomic.make (-1)
+        let vote_count = Atomic.make 0
         let clock = clock
 
         let last_heartbeat = Atomic.make (Unix.gettimeofday ())
@@ -79,20 +82,26 @@ let create_heartbeat_monitor (proc: (module Process_type)) : unit -> unit =
         while true do
             let current_time = Unix.gettimeofday () in
             let gap = current_time -. Atomic.get Proc.last_heartbeat in
-            if (Atomic.get Proc.state != Leader) && (gap >= Proc.timeout_s)
-            then
-                (let msg = create_message proc Proc.index Timeout in
-                Eio.Stream.add Proc.inbox msg);
+            if (Atomic.get Proc.state != Leader)
+            && (gap >= Proc.timeout_s)
+            then begin
+                let msg = create_message proc Proc.index Timeout in
+                Eio.Stream.add Proc.inbox msg;
+            end;
             Eio.Time.sleep Proc.clock 1.0;
         done
 
+let calculate_majority_count (max_index : int) : int =
+    (max_index + 1) / 2 + 1
+
 let print_state (proc : (module Process_type)) : unit =
     let module Proc = (val proc) in
-    traceln "Term %d; Process %d; State %s; Voted for process %d"
+    traceln "Term %d; Process %d; State %s; Voted for process %d; Vote count %d"
         (Atomic.get Proc.term)
         Proc.index
         (show_process_state (Atomic.get Proc.state))
         (Atomic.get Proc.voted_for)
+        (Atomic.get Proc.vote_count)
 
 let create_state_printer (proc : (module Process_type)) : unit -> unit =
     fun () ->
@@ -157,20 +166,26 @@ let create_message_handler (proc: (module Process_type)) : unit -> unit =
             let () = print_message msg in
             match msg.content, Atomic.get Proc.state with
             | Heartbeat, Follower ->
-                if (msg.term >= Atomic.get Proc.term)
-                then
-                    Atomic.set Proc.term msg.term;
-                    Atomic.set Proc.last_heartbeat (Unix.gettimeofday ());
-            | Heartbeat, Candidate ->
-                Atomic.set Proc.state Follower;
                 Atomic.set Proc.last_heartbeat (Unix.gettimeofday ());
-                Atomic.set Proc.voted_for (-1);
+                if (msg.term >= Atomic.get Proc.term)
+                then begin
+                    Atomic.set Proc.term msg.term;
+                end
+            | Heartbeat, Candidate ->
+                if (msg.term >= Atomic.get Proc.term)
+                then begin
+                    Atomic.set Proc.state Follower;
+                    Atomic.set Proc.last_heartbeat (Unix.gettimeofday ());
+                    Atomic.set Proc.voted_for (-1);
+                    Atomic.set Proc.vote_count 0;
+                end
 
             | Timeout, Follower ->
                 if Atomic.get Proc.voted_for = (-1)
                 then begin
                     Atomic.set Proc.state Candidate;
                     Atomic.set Proc.voted_for Proc.index;
+                    Atomic.set Proc.vote_count 1;
                     Atomic.incr Proc.term;
                     send_to_all proc VoteRequest;
                 end
@@ -180,13 +195,24 @@ let create_message_handler (proc: (module Process_type)) : unit -> unit =
             | Promotion, Follower
             | Promotion, Candidate ->
                 Atomic.set Proc.voted_for (-1);
+                Atomic.set Proc.vote_count 0;
                 Atomic.set Proc.state Leader;
 
             | VoteRequest, Follower
             | VoteRequest, Candidate ->
                 if Atomic.get Proc.voted_for = (-1)
                 && Atomic.get Proc.term < msg.term
-                then Atomic.set Proc.voted_for msg.from_index;
+                then begin
+                    Atomic.set Proc.voted_for msg.from_index;
+                    let msg = create_message proc msg.from_index VoteResponse in
+                    Eio.Stream.add Proc.outbox msg;
+                end
+
+            | VoteResponse, Candidate ->
+                Atomic.incr Proc.vote_count;
+                if Atomic.get Proc.vote_count >= calculate_majority_count Proc.max_index
+                then Eio.Stream.add Proc.inbox (create_message proc Proc.index Promotion);
+            | VoteResponse, Leader -> ()
 
             | _ -> let _ = failwith "unreachable code" in ();
 
