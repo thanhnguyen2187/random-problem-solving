@@ -24,6 +24,7 @@ from itertools import (
     takewhile,
 )
 from functools import (
+    cache,
     cached_property,
 )
 from collections import (
