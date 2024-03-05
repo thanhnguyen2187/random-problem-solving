@@ -37,23 +37,31 @@ from collections import (
 class Solution:
     def numDecodings(self, s: str) -> int:
         @cache
-        def recurse(s: str) -> int:
-            n = len(s)
-            if n <= 1:
-                return n
-            if len(s) == 2:
-                x = int(s)
-                if 10 <= x <= 26:
-                    return 2
-
+        def recurse(i: int) -> int:
+            if i >= len(s):
                 return 1
+            if s[i] == '0':
+                return 0
 
-            return recurse(s[1:]) + recurse(s[:2]) * recurse(s[2:])
+            result: int = 0
+            if '1' <= s[i] <= '9':
+                result = recurse(i + 1)
+            if (
+                i + 1 < len(s) and
+                (
+                    s[i] == '1' or
+                    s[i] == '2' and '0' <= s[i + 1] < '7'
+                )
+            ):
+                result += recurse(i + 2)
 
-        return recurse(s)
+            return result
+
+        return recurse(0)
 
 
 if __name__ == '__main__':
     solution = Solution()
     print(solution.numDecodings(s="12"))
     print(solution.numDecodings(s="226"))
+    print(solution.numDecodings(s="06"))
