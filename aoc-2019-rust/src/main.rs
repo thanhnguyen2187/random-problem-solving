@@ -98,18 +98,22 @@ fn main() {
             "--help" => print_help(),
             "--version" => print_version(),
             arg => match parse_arg(arg) {
-                Ok(day) => {
-                    println!("Running solution for day {} part {}", day.number, day.part);
-                    let _input = input::read(day.number).unwrap();
-                    match day.part {
-                        1 => {
-                            let part_1_result = day_1::solve_part1(&_input);
+                Ok(Day { number: day_number, part }) => {
+                    println!("Running solution for day {} part {}", day_number, part);
+                    let _input = input::read(day_number).unwrap();
+                    match (day_number, part) {
+                        (1, 1) => {
+                            let part_1_result = day_1::solve_part_1(&_input);
                             println!("Part 1 result: {part_1_result:?}");
-                        },
-                        // 2 => day_1::solve_part2(&_input),
-                        _ => panic!("Part {} is not implemented", day.part),
+                        }
+                        (1, 2) => {
+                            let part_2_result = day_1::solve_part_2(&_input);
+                            println!("Part 2 result: {part_2_result:?}");
+                        }
+                        (2, 1) => {}
+                        _ => panic!("Unimplemented code for day {} part {}", day_number, part),
                     };
-                },
+                }
                 Err(error) => println!("Error: {}", error),
             },
         },
