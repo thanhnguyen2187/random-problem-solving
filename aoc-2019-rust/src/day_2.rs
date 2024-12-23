@@ -102,8 +102,16 @@ pub fn solve_part_1(input: &str) -> Result<u32, String> {
     Ok(opcodes[0])
 }
 
-// pub fn solve_part_2(input: &str) -> Result<i32, String> {
-//     let masses = parse_input(input)?;
-//     let total_fuel = masses.iter().map(|mass| calculate_fuel_required_2(*mass)).sum::<i32>();
-//     Ok(total_fuel)
-// }
+pub fn solve_part_2(input: &str) -> Result<u32, String> {
+    let opcodes_original = parse_input(input)?;
+    for (noun, verb) in (0..100).flat_map(|i| (0..100).map(move |j| (i, j))) {
+        let mut opcodes = opcodes_original.clone();
+        opcodes[1] = noun;
+        opcodes[2] = verb;
+        evaluate(&mut opcodes)?;
+        if opcodes[0] == 19690720 {
+            return Ok(noun * 100 + verb);
+        }
+    }
+    Err("No solution found".to_string())
+}
