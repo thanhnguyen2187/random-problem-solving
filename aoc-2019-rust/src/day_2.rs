@@ -96,6 +96,8 @@ mod tests {
 
 pub fn solve_part_1(input: &str) -> Result<u32, String> {
     let mut opcodes = parse_input(input)?;
+    opcodes[1] = 12;
+    opcodes[2] = 2;
     evaluate(&mut opcodes)?;
     Ok(opcodes[0])
 }
