@@ -1,5 +1,6 @@
 mod day_1;
 mod input;
+mod day_2;
 
 use std::env;
 // use std::fs;
@@ -110,7 +111,10 @@ fn main() {
                             let part_2_result = day_1::solve_part_2(&_input);
                             println!("Part 2 result: {part_2_result:?}");
                         }
-                        (2, 1) => {}
+                        (2, 1) => {
+                            let part_1_result = day_2::solve_part_1(&_input);
+                            println!("Part 1 result: {part_1_result:?}");
+                        }
                         _ => panic!("Unimplemented code for day {} part {}", day_number, part),
                     };
                 }
