@@ -17,6 +17,8 @@ pub struct Position {
     y: i16,
 }
 
+type PairPositionDistance = (Position, i16);
+
 pub fn parse_input(input: &str) -> Result<Vec<Vec<Step>>, String> {
     input
         .lines()
@@ -60,13 +62,11 @@ pub fn parse_line(line: &str) -> Result<Vec<Step>, String> {
         .collect()
 }
 
-/// Calculates the positions that the wire will take after a particular step. Also returns the
-/// wire's position after the step.
-pub fn calculate_wire_positions(
+pub fn calculate_position_last(
     position_current: Position,
     step: &Step,
-) -> (HashSet<Position>, Position) {
-    let position_last = match step {
+) -> Position {
+    match step {
         Step::Up(distance) => {
             Position {
                 x: position_current.x,
@@ -91,7 +91,16 @@ pub fn calculate_wire_positions(
                 y: position_current.y,
             }
         }
-    };
+    }
+}
+
+/// Calculates the positions that the wire will take after a particular step. Also returns the
+/// wire's position after the step.
+pub fn calculate_wire_positions(
+    position_current: Position,
+    step: &Step,
+) -> (HashSet<Position>, Position) {
+    let position_last = calculate_position_last(position_current, step);
     let mut positions = HashSet::new();
     let mut position_running = position_current;
     loop {
@@ -137,8 +146,7 @@ pub fn calculate_wire_positions_all(
 pub fn calculate_positions_recorder(
     position_start: Position,
     wires_steps: Vec<Vec<Step>>,
-) -> HashMap<Position, HashSet<usize>>
-{
+) -> HashMap<Position, HashSet<usize>> {
     let mut recorder = HashMap::new();
 
     for (wire_index, wire_steps) in wires_steps.iter().enumerate() {
@@ -153,6 +161,59 @@ pub fn calculate_positions_recorder(
     }
 
     recorder
+}
+
+// Calculates the positions that the wires will pass through and corresponding distances.
+pub fn calculate_pairs_position_distance(
+    position_start: Position,
+    distance_start: i16,
+    step: &Step,
+) -> Vec<PairPositionDistance> {
+    let mut position_running = position_start;
+    let mut pairs: Vec<PairPositionDistance> = Vec::new();
+    let mut distance = distance_start;
+    let position_last = calculate_position_last(position_running, step);
+    while position_running != position_last {
+        match step {
+            Step::Up(_) => {
+                position_running.y += 1;
+            }
+            Step::Down(_) => {
+                position_running.y -= 1;
+            }
+            Step::Left(_) => {
+                position_running.x -= 1;
+            }
+            Step::Right(_) => {
+                position_running.x += 1;
+            }
+        }
+        distance += 1;
+        pairs.push((position_running.clone(), distance));
+    }
+
+    pairs
+}
+
+pub fn calculate_pairs_position_distance_all(
+    position_start: Position,
+    steps: &Vec<Step>,
+) -> Vec<(Position, i16)> {
+    let mut pairs_all = Vec::new();
+    let mut distance_running = 0;
+    let mut position_running = position_start;
+    for step in steps {
+        let pairs =
+            calculate_pairs_position_distance(
+                position_running,
+                distance_running,
+                step,
+            );
+        position_running = pairs.last().unwrap().0;
+        distance_running = pairs.last().unwrap().1;
+        pairs_all.extend(pairs);
+    }
+    pairs_all
 }
 
 pub fn calculate_manhattan_distance(position1: Position, position2: Position) -> i16 {
@@ -309,6 +370,59 @@ mod tests {
         }
     }
 
+    mod calculate_pairs_position_distance {
+        use super::*;
+
+        #[test]
+        fn success() {
+            let position_start = Position { x: 0, y: 0 };
+            let step = Step::Right(5);
+            let pairs_position_distance =
+                calculate_pairs_position_distance(
+                    position_start,
+                    0,
+                    &step,
+                );
+            assert_eq!(pairs_position_distance, vec![
+                (Position { x: 1, y: 0 }, 1),
+                (Position { x: 2, y: 0 }, 2),
+                (Position { x: 3, y: 0 }, 3),
+                (Position { x: 4, y: 0 }, 4),
+                (Position { x: 5, y: 0 }, 5),
+            ]);
+        }
+    }
+
+    mod calculate_pairs_position_distance_all {
+        use super::*;
+
+        #[test]
+        fn success() {
+            let position_start = Position { x: 0, y: 0 };
+            let steps = vec![
+                Step::Right(2),
+                Step::Up(2),
+                Step::Left(2),
+                Step::Down(2),
+            ];
+            let pairs_position_distance_all =
+                calculate_pairs_position_distance_all(
+                    position_start,
+                    &steps,
+                );
+            assert_eq!(pairs_position_distance_all, vec![
+                (Position { x: 1, y: 0 }, 1),
+                (Position { x: 2, y: 0 }, 2),
+                (Position { x: 2, y: 1 }, 3),
+                (Position { x: 2, y: 2 }, 4),
+                (Position { x: 1, y: 2 }, 5),
+                (Position { x: 0, y: 2 }, 6),
+                (Position { x: 0, y: 1 }, 7),
+                (Position { x: 0, y: 0 }, 8),
+            ]);
+        }
+    }
+
     mod solve_part_1 {
         use super::*;
 
@@ -359,16 +473,22 @@ pub fn solve_part_1(input: &str) -> Result<i16, String> {
     Ok(distance_min)
 }
 
-// pub fn solve_part_2(input: &str) -> Result<u32, String> {
-//     let opcodes_original = parse_input(input)?;
-//     for (noun, verb) in (0..100).flat_map(|i| (0..100).map(move |j| (i, j))) {
-//         let mut opcodes = opcodes_original.clone();
-//         opcodes[1] = noun;
-//         opcodes[2] = verb;
-//         evaluate(&mut opcodes)?;
-//         if opcodes[0] == 19690720 {
-//             return Ok(noun * 100 + verb);
-//         }
-//     }
-//     Err("No solution found".to_string())
-// }
+pub fn solve_part_2(input: &str) -> Result<u32, String> {
+    let wires_steps = parse_input(input)?;
+    let position_start = Position { x: 0, y: 0 };
+    let recorder =
+        calculate_positions_recorder(
+            position_start,
+            wires_steps,
+        );
+
+    let mut distance_min = i16::MAX;
+    for (position, wires) in recorder {
+        if wires.len() == 1 || position == position_start {
+            continue;
+        }
+        let distance = calculate_manhattan_distance(position, position_start);
+        distance_min = min(distance_min, distance);
+    }
+    Err("No solution found".to_string())
+}
