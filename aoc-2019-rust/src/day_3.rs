@@ -5,19 +5,19 @@ use std::collections::HashSet;
 /// Denotes how a wire moves.
 #[derive(Debug, PartialEq)]
 pub enum Step {
-    Up(i16),
-    Down(i16),
-    Left(i16),
-    Right(i16),
+    Up(i32),
+    Down(i32),
+    Left(i32),
+    Right(i32),
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Copy, Clone)]
 pub struct Position {
-    x: i16,
-    y: i16,
+    x: i32,
+    y: i32,
 }
 
-type PairPositionDistance = (Position, i16);
+type PairPositionDistance = (Position, i32);
 
 pub fn parse_input(input: &str) -> Result<Vec<Vec<Step>>, String> {
     input
@@ -33,25 +33,25 @@ pub fn parse_line(line: &str) -> Result<Vec<Step>, String> {
             let word = word.trim();
             match word.chars().next() {
                 Some('U') => {
-                    let distance = word[1..].parse::<i16>().map_err(|err| {
+                    let distance = word[1..].parse::<i32>().map_err(|err| {
                         format!("Failed to parse '{word}' to step: {err}")
                     })?;
                     Ok(Step::Up(distance))
                 }
                 Some('D') => {
-                    let distance = word[1..].parse::<i16>().map_err(|err| {
+                    let distance = word[1..].parse::<i32>().map_err(|err| {
                         format!("Failed to parse '{word}' to step: {err}")
                     })?;
                     Ok(Step::Down(distance))
                 }
                 Some('L') => {
-                    let distance = word[1..].parse::<i16>().map_err(|err| {
+                    let distance = word[1..].parse::<i32>().map_err(|err| {
                         format!("Failed to parse '{word}' to step: {err}")
                     })?;
                     Ok(Step::Left(distance))
                 }
                 Some('R') => {
-                    let distance = word[1..].parse::<i16>().map_err(|err| {
+                    let distance = word[1..].parse::<i32>().map_err(|err| {
                         format!("Failed to parse '{word}' to step: {err}")
                     })?;
                     Ok(Step::Right(distance))
@@ -166,7 +166,7 @@ pub fn calculate_positions_recorder(
 // Calculates the positions that the wires will pass through and corresponding distances.
 pub fn calculate_pairs_position_distance(
     position_start: Position,
-    distance_start: i16,
+    distance_start: i32,
     step: &Step,
 ) -> Vec<PairPositionDistance> {
     let mut position_running = position_start;
@@ -198,8 +198,8 @@ pub fn calculate_pairs_position_distance(
 pub fn calculate_pairs_position_distance_all(
     position_start: Position,
     steps: &Vec<Step>,
-) -> Vec<(Position, i16)> {
-    let mut pairs_all = Vec::new();
+) -> HashMap<Position, i32> {
+    let mut recorder = HashMap::new();
     let mut distance_running = 0;
     let mut position_running = position_start;
     for step in steps {
@@ -211,12 +211,18 @@ pub fn calculate_pairs_position_distance_all(
             );
         position_running = pairs.last().unwrap().0;
         distance_running = pairs.last().unwrap().1;
-        pairs_all.extend(pairs);
+
+        for (position, distance) in pairs {
+            if recorder.contains_key(&position) || position == position_start {
+                continue;
+            }
+            recorder.insert(position, distance);
+        }
     }
-    pairs_all
+    recorder
 }
 
-pub fn calculate_manhattan_distance(position1: Position, position2: Position) -> i16 {
+pub fn calculate_manhattan_distance(position1: Position, position2: Position) -> i32 {
     (position1.x - position2.x).abs() +
         (position1.y - position2.y).abs()
 }
@@ -285,7 +291,7 @@ mod tests {
             let position_current = Position { x: 0, y: 0 };
             {
                 let step = Step::Right(2);
-                let (positions, position_last) =
+                let (positions, _) =
                     calculate_wire_positions(position_current, &step);
                 assert_eq!(positions, HashSet::from_iter(vec![
                     Position { x: 1, y: 0 },
@@ -294,7 +300,7 @@ mod tests {
             }
             {
                 let step = Step::Up(2);
-                let (positions, position_last) =
+                let (positions, _) =
                     calculate_wire_positions(position_current, &step);
                 assert_eq!(positions, HashSet::from_iter(vec![
                     Position { x: 0, y: 1 },
@@ -404,22 +410,30 @@ mod tests {
                 Step::Up(2),
                 Step::Left(2),
                 Step::Down(2),
+                // repeating the same steps
+                Step::Right(2),
+                Step::Up(2),
+                Step::Left(2),
+                Step::Down(2),
             ];
             let pairs_position_distance_all =
                 calculate_pairs_position_distance_all(
                     position_start,
                     &steps,
                 );
-            assert_eq!(pairs_position_distance_all, vec![
-                (Position { x: 1, y: 0 }, 1),
-                (Position { x: 2, y: 0 }, 2),
-                (Position { x: 2, y: 1 }, 3),
-                (Position { x: 2, y: 2 }, 4),
-                (Position { x: 1, y: 2 }, 5),
-                (Position { x: 0, y: 2 }, 6),
-                (Position { x: 0, y: 1 }, 7),
-                (Position { x: 0, y: 0 }, 8),
-            ]);
+            assert_eq!(
+                pairs_position_distance_all,
+                HashMap::from_iter(vec![
+                    (Position { x: 1, y: 0 }, 1),
+                    (Position { x: 2, y: 0 }, 2),
+                    (Position { x: 2, y: 1 }, 3),
+                    (Position { x: 2, y: 2 }, 4),
+                    (Position { x: 1, y: 2 }, 5),
+                    (Position { x: 0, y: 2 }, 6),
+                    (Position { x: 0, y: 1 }, 7),
+                    (Position { x: 0, y: 0 }, 8),
+                ]),
+            );
         }
     }
 
@@ -450,9 +464,37 @@ mod tests {
             assert_eq!(result, 135);
         }
     }
+
+    mod solve_part_2 {
+        use super::*;
+
+        #[test]
+        fn success() {
+            let input = r#"R8,U5,L5,D3
+            U7,R6,D4,L4"#;
+            let result = solve_part_2(input).unwrap();
+            assert_eq!(result, 30);
+        }
+
+        #[test]
+        fn success_2() {
+            let input = r#"R75,D30,R83,U83,L12,D49,R71,U7,L72
+            U62,R66,U55,R34,D71,R55,D58,R83"#;
+            let result = solve_part_2(input).unwrap();
+            assert_eq!(result, 610);
+        }
+
+        #[test]
+        fn success_3() {
+            let input = r#"R98,U47,R26,D63,R33,U87,L62,D20,R33,U53,R51
+            U98,R91,D20,R16,D67,R40,U7,R15,U6,R7"#;
+            let result = solve_part_2(input).unwrap();
+            assert_eq!(result, 410);
+        }
+    }
 }
 
-pub fn solve_part_1(input: &str) -> Result<i16, String> {
+pub fn solve_part_1(input: &str) -> Result<i32, String> {
     let wires_steps = parse_input(input)?;
     let position_start = Position { x: 0, y: 0 };
     let recorder =
@@ -461,7 +503,7 @@ pub fn solve_part_1(input: &str) -> Result<i16, String> {
             wires_steps,
         );
 
-    let mut distance_min = i16::MAX;
+    let mut distance_min = i32::MAX;
     for (position, wires) in recorder {
         if wires.len() == 1 || position == position_start {
             continue;
@@ -473,22 +515,32 @@ pub fn solve_part_1(input: &str) -> Result<i16, String> {
     Ok(distance_min)
 }
 
-pub fn solve_part_2(input: &str) -> Result<u32, String> {
+pub fn solve_part_2(input: &str) -> Result<i32, String> {
     let wires_steps = parse_input(input)?;
     let position_start = Position { x: 0, y: 0 };
-    let recorder =
-        calculate_positions_recorder(
-            position_start,
-            wires_steps,
-        );
 
-    let mut distance_min = i16::MAX;
-    for (position, wires) in recorder {
-        if wires.len() == 1 || position == position_start {
-            continue;
+    let mut recorder_all: HashMap<Position, (i32, i32)> = HashMap::new();
+    for steps in wires_steps.iter() {
+        let recorder =
+            calculate_pairs_position_distance_all(
+                position_start,
+                steps,
+            );
+        for (position, distance) in recorder {
+            let (count_current, distance_current) =
+                recorder_all.entry(position).or_insert((0, 0));
+            *count_current += 1;
+            *distance_current += distance as i32;
         }
-        let distance = calculate_manhattan_distance(position, position_start);
-        distance_min = min(distance_min, distance);
     }
-    Err("No solution found".to_string())
+
+    let distance_min =
+        recorder_all
+            .iter()
+            .filter(|(_, (count, _))| *count > 1)
+            .map(|(_, (_, distance))| *distance)
+            .min()
+            .unwrap();
+
+    Ok(distance_min)
 }
