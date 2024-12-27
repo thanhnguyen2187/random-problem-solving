@@ -3,8 +3,10 @@ mod input;
 mod day_1;
 mod day_2;
 mod day_3;
+mod solution;
 
 use std::env;
+use crate::solution::DaySolution;
 // use std::fs;
 
 #[derive(Debug)]
@@ -78,6 +80,11 @@ mod tests {
         assert!(parse_arg("1-b").is_err());
         assert!(parse_arg("1-3").is_err());
     }
+
+    #[test]
+    fn invalid_2() {
+        assert!(parse_arg("1 1").is_err());
+    }
 }
 
 fn print_version() {
@@ -104,29 +111,19 @@ fn main() {
                 Ok(Day { number: day_number, part }) => {
                     println!("Running solution for day {} part {}", day_number, part);
                     let _input = input::read(day_number).unwrap();
-                    match (day_number, part) {
-                        (1, 1) => {
-                            let part_1_result = day_1::solve_part_1(&_input);
+                    let day_solution: Box<dyn DaySolution> = match day_number {
+                        1 => Box::new(day_1::Day1 {}),
+                        2 => Box::new(day_2::Day2 {}),
+                        3 => Box::new(day_3::Day3 {}),
+                        _ => panic!("Unimplemented code for day {}", day_number),
+                    };
+                    match part {
+                        1 => {
+                            let part_1_result = day_solution.solve_part_1(&_input);
                             println!("Part 1 result: {part_1_result:?}");
                         }
-                        (1, 2) => {
-                            let part_2_result = day_1::solve_part_2(&_input);
-                            println!("Part 2 result: {part_2_result:?}");
-                        }
-                        (2, 1) => {
-                            let part_1_result = day_2::solve_part_1(&_input);
-                            println!("Part 1 result: {part_1_result:?}");
-                        }
-                        (2, 2) => {
-                            let part_2_result = day_2::solve_part_2(&_input);
-                            println!("Part 2 result: {part_2_result:?}");
-                        }
-                        (3, 1) => {
-                            let part_1_result = day_3::solve_part_1(&_input);
-                            println!("Part 1 result: {part_1_result:?}");
-                        }
-                        (3, 2) => {
-                            let part_2_result = day_3::solve_part_2(&_input);
+                        2 => {
+                            let part_2_result = day_solution.solve_part_2(&_input);
                             println!("Part 2 result: {part_2_result:?}");
                         }
                         _ => panic!("Unimplemented code for day {} part {}", day_number, part),

@@ -1,3 +1,5 @@
+use crate::solution::DaySolution;
+
 pub fn parse_input(input: &str) -> Result<Vec<i32>, String> {
     input
         .lines()
@@ -76,4 +78,17 @@ pub fn solve_part_2(input: &str) -> Result<i32, String> {
     let masses = parse_input(input)?;
     let total_fuel = masses.iter().map(|mass| calculate_fuel_required_2(*mass)).sum::<i32>();
     Ok(total_fuel)
+}
+
+pub struct Day1 {}
+
+impl DaySolution for Day1 {
+
+    fn solve_part_1(&self, input: &str) -> Result<i32, String> {
+        solve_part_1(input)
+    }
+
+    fn solve_part_2(&self, input: &str) -> Result<i32, String> {
+        solve_part_2(input)
+    }
 }

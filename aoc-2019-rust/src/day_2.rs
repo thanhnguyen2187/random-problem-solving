@@ -1,15 +1,17 @@
-pub fn parse_input(input: &str) -> Result<Vec<u32>, String> {
+use crate::solution::DaySolution;
+
+pub fn parse_input(input: &str) -> Result<Vec<i32>, String> {
     input
         .split(',')
         .map(|line| {
             line.trim()
-                .parse::<u32>()
+                .parse::<i32>()
                 .map_err(|err| format!("Failed to parse '{line}' as number: {err}"))
         })
         .collect()
 }
 
-pub fn evaluate(opcodes: &mut Vec<u32>) -> Result<(), String> {
+pub fn evaluate(opcodes: &mut Vec<i32>) -> Result<(), String> {
     let mut index: usize = 0;
     while index < opcodes.len() || opcodes[index] != 99 {
         let opcode = opcodes[index];
@@ -94,7 +96,7 @@ mod tests {
     }
 }
 
-pub fn solve_part_1(input: &str) -> Result<u32, String> {
+pub fn solve_part_1(input: &str) -> Result<i32, String> {
     let mut opcodes = parse_input(input)?;
     opcodes[1] = 12;
     opcodes[2] = 2;
@@ -102,7 +104,7 @@ pub fn solve_part_1(input: &str) -> Result<u32, String> {
     Ok(opcodes[0])
 }
 
-pub fn solve_part_2(input: &str) -> Result<u32, String> {
+pub fn solve_part_2(input: &str) -> Result<i32, String> {
     let opcodes_original = parse_input(input)?;
     for (noun, verb) in (0..100).flat_map(|i| (0..100).map(move |j| (i, j))) {
         let mut opcodes = opcodes_original.clone();
@@ -114,4 +116,16 @@ pub fn solve_part_2(input: &str) -> Result<u32, String> {
         }
     }
     Err("No solution found".to_string())
+}
+
+pub struct Day2 {}
+
+impl DaySolution for Day2 {
+    fn solve_part_1(&self, input: &str) -> Result<i32, String> {
+        solve_part_1(input)
+    }
+
+    fn solve_part_2(&self, input: &str) -> Result<i32, String> {
+        solve_part_2(input)
+    }
 }

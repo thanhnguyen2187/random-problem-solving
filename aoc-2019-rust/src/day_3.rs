@@ -1,3 +1,5 @@
+use crate::solution::DaySolution;
+
 use std::cmp::{min};
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -543,4 +545,16 @@ pub fn solve_part_2(input: &str) -> Result<i32, String> {
             .unwrap();
 
     Ok(distance_min)
+}
+
+pub struct Day3 {}
+
+impl DaySolution for Day3 {
+    fn solve_part_1(&self, input: &str) -> Result<i32, String> {
+        solve_part_1(input)
+    }
+
+    fn solve_part_2(&self, input: &str) -> Result<i32, String> {
+        solve_part_2(input)
+    }
 }
