@@ -3,6 +3,7 @@ mod input;
 mod day_1;
 mod day_2;
 mod day_3;
+mod day_4;
 mod solution;
 
 use std::env;
@@ -103,6 +104,7 @@ fn print_help() {
 
 fn main() {
     let args: Vec<String> = env::args().collect();
+    // let args = vec!["".to_string(), "4-1".to_string()];
     match args.len() {
         2 => match args[1].as_str() {
             "--help" => print_help(),
@@ -115,6 +117,7 @@ fn main() {
                         1 => Box::new(day_1::Day1 {}),
                         2 => Box::new(day_2::Day2 {}),
                         3 => Box::new(day_3::Day3 {}),
+                        4 => Box::new(day_4::Day4 {}),
                         _ => panic!("Unimplemented code for day {}", day_number),
                     };
                     match part {
