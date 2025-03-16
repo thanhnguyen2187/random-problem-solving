@@ -3,26 +3,28 @@ from typing import List
 
 class Solution:
     def trap(self, heights: List[int]) -> int:
-        heights_max_ltr = [heights[0]]
-        heights_max_rtl = [heights[-1]]
-
-        for h in heights[1:]:
-            heights_max_ltr.append(max(heights_max_ltr[-1], h))
-        for h in reversed(heights[:-1]):
-            heights_max_rtl.append(max(heights_max_rtl[-1], h))
-        heights_max_rtl.reverse()
+        n = len(heights)
+        left, right = 0, n - 1
+        max_left, max_right = heights[left], heights[right]
 
         total_water = 0
-        for i in range(1, len(heights) - 1):
-            possible_height = min(heights_max_ltr[i - 1], heights_max_rtl[i + 1])
-            total_water += max(0, possible_height - heights[i])
+        while left < right:
+            possible_water = min(max_left, max_right) - min(heights[left], heights[right])
+            possible_water = max(0, possible_water)
+            total_water += possible_water
+            max_left = max(heights[left], max_left)
+            max_right = max(heights[right], max_right)
+            if heights[left] < heights[right]:
+                left += 1
+            else:
+                right -= 1
 
         return total_water
 
 
 if __name__ == "__main__":
     s = Solution()
-    # heights = [0, 2, 0, 3, 1, 0, 1, 3, 2, 1]
-    heights = [4, 2, 0, 3, 2, 5]
+    heights = [0, 2, 0, 3, 1, 0, 1, 3, 2, 1]
+    # heights = [4, 2, 0, 3, 2, 5]
     result = s.trap(heights=heights)
     print(result)
