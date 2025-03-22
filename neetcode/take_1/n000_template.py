@@ -7,7 +7,7 @@ class Solution:
 
 
 if __name__ == "__main__":
-    s = Solution()
+    solution = Solution()
     nums = []
-    result = s.solution(nums=nums)
+    result = solution.solution(nums=nums)
     print(result)
